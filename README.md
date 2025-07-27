@@ -1,45 +1,50 @@
-# CoralTrack - Asistente para Acuarios de Arrecife
+# CoralTrack v2.0 🐠
 
-Una aplicación web progresiva (PWA) mobile-first para el seguimiento de parámetros del agua y crecimiento de corales en acuarios de arrecife.
+Aplicación web para monitoreo de acuarios de arrecife con sistema de drag & drop y scroll ilimitado.
 
-## Características
+## 🚀 Características
 
-### Módulo 1: Registro y Visualización de Parámetros
-- Formulario simple para registrar 7 parámetros del agua
-- Gráficos individuales para cada parámetro con Chart.js
-- Historial completo de mediciones con notas
-- Almacenamiento local en el navegador
+- **Monitoreo de parámetros** del agua (KH, Calcio, Nitratos, etc.)
+- **Galería de fotos** con drag & drop nativo
+- **Scroll ilimitado** para colecciones grandes
+- **Sistema de especies** personalizable
+- **Análisis predictivo** y correlaciones
+- **PWA** - Funciona offline
+- **Responsive** - Optimizado para móviles
 
-### Módulo 2: Galería de Seguimiento de Corales
-- Pestañas organizadas por especies (Pachyclavularia, Palythoa)
-- Carga de fotos desde cámara o galería
-- Visualización en cuadrícula con fechas
-- Modal para vista ampliada de fotos
+## 📱 Demo
 
-## Instalación
+Accede a la aplicación: [CoralTrack](https://gadiazsaavedra.github.io/coral-dev/)
 
-1. Servir los archivos desde un servidor web local
-2. Abrir en navegador móvil
-3. Agregar a pantalla de inicio para experiencia PWA completa
+## 🛠️ Tecnologías
 
-## Uso
-
-### Registrar Parámetros
-1. Completar formulario con valores medidos
-2. Agregar notas opcionales
-3. Guardar medición
-4. Ver gráficos y historial actualizados
-
-### Galería de Corales
-1. Seleccionar pestaña de especie
-2. Tocar "Cargar Foto"
-3. Tomar foto o seleccionar de galería
-4. Ver en cuadrícula con fecha
-5. Tocar foto para vista ampliada
-
-## Tecnologías
-- HTML5, CSS3, JavaScript ES6
+- HTML5, CSS3, JavaScript (Vanilla)
 - Chart.js para gráficos
 - LocalStorage para persistencia
-- Service Worker para funcionalidad offline
-- PWA con manifest.json
+- Service Worker para PWA
+
+## 🔧 Instalación
+
+1. Clona el repositorio:
+```bash
+git clone https://github.com/gadiazsaavedra/coral-dev.git
+```
+
+2. Abre `index.html` en tu navegador
+
+## 📖 Uso
+
+1. **Parámetros**: Registra mediciones de agua
+2. **Galería**: Sube fotos y reordénalas con drag & drop
+3. **Análisis**: Revisa tendencias y predicciones
+4. **Bio**: Gestiona inventario de corales
+
+## 🎯 Drag & Drop
+
+- **Desktop**: Arrastra fotos con el mouse
+- **Móvil**: Mantén presionado 300ms y arrastra
+- **Scroll**: Ilimitado en todas las direcciones
+
+## 📄 Licencia
+
+MIT License - Libre para uso personal y comercial
