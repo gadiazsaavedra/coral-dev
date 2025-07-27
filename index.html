@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>CoralTrack - Asistente para Acuarios</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2.0">
     <meta name="theme-color" content="#2196F3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -15,7 +15,7 @@
 <body>
     <div class="app">
         <header>
-            <h1>CoralTrack</h1>
+            <h1>CoralTrack <span style="background: #ff4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">DEV</span></h1>
             <nav class="tab-nav">
                 <button class="tab-btn active" data-tab="parametros">Parámetros</button>
                 <button class="tab-btn" data-tab="avanzado">Avanzado</button>
@@ -333,7 +333,7 @@
             }
         });
     </script>
-    <script src="app.js"></script>
+    <script src="app.js?v=2.0"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');

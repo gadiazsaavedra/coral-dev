@@ -1,5 +1,10 @@
 class CoralTrack {
     constructor() {
+        this.dataVersion = '1.1'; // Versión actual de los datos
+        
+        // Migrar datos antes de cargarlos
+        this.migrateData();
+        
         this.parametros = JSON.parse(localStorage.getItem('parametros')) || [];
         this.fotos = JSON.parse(localStorage.getItem('fotos')) || {};
         this.inventario = JSON.parse(localStorage.getItem('inventario')) || [];
@@ -12,9 +17,58 @@ class CoralTrack {
         this.charts = {};
         this.renderTimeout = null;
         
-        // No cargar datos automáticamente
-        
         this.init();
+    }
+    
+    migrateData() {
+        const currentVersion = localStorage.getItem('dataVersion') || '1.0';
+        
+        if (currentVersion !== this.dataVersion) {
+            console.log(`Migrando datos de versión ${currentVersion} a ${this.dataVersion}`);
+            
+            // Hacer backup antes de migrar
+            this.createBackup(currentVersion);
+            
+            // Realizar migración según versión
+            this.performMigration(currentVersion, this.dataVersion);
+            
+            // Actualizar versión
+            localStorage.setItem('dataVersion', this.dataVersion);
+            
+            this.mostrarConfirmacion(`✅ Datos actualizados a versión ${this.dataVersion}`);
+        }
+    }
+    
+    createBackup(version) {
+        const backup = {
+            version: version,
+            timestamp: new Date().toISOString(),
+            parametros: JSON.parse(localStorage.getItem('parametros') || '[]'),
+            fotos: JSON.parse(localStorage.getItem('fotos') || '{}'),
+            inventario: JSON.parse(localStorage.getItem('inventario') || '[]'),
+            eventos: JSON.parse(localStorage.getItem('eventos') || '[]')
+        };
+        
+        localStorage.setItem(`backup_${version}_${Date.now()}`, JSON.stringify(backup));
+        console.log('Backup creado:', `backup_${version}_${Date.now()}`);
+    }
+    
+    performMigration(fromVersion, toVersion) {
+        // Migraciones específicas por versión
+        if (fromVersion === '1.0' && toVersion === '1.1') {
+            // Ejemplo: agregar campo 'id' a fotos si no existe
+            const fotos = JSON.parse(localStorage.getItem('fotos') || '{}');
+            Object.keys(fotos).forEach(especie => {
+                fotos[especie].forEach((foto, index) => {
+                    if (!foto.id) {
+                        foto.id = Date.now() + index;
+                    }
+                });
+            });
+            localStorage.setItem('fotos', JSON.stringify(fotos));
+        }
+        
+        // Agregar más migraciones aquí según sea necesario
     }
     
     debounce(func, wait) {
@@ -755,127 +809,123 @@ class CoralTrack {
     setupDragAndDrop(grid, especie) {
         const photos = grid.querySelectorAll('.photo-item');
         
-        photos.forEach(photo => {
-            let startPos = null;
-            let hasMoved = false;
-            let draggedOver = null;
-            let longPressTimer = null;
-            let isLongPress = false;
+        photos.forEach((photo, index) => {
+            photo.draggable = true;
+            photo.style.touchAction = 'none';
             
+            let draggedElement = null;
+            let startPos = null;
+            let isDragging = false;
+            
+            // Eventos de drag para desktop
+            photo.addEventListener('dragstart', (e) => {
+                draggedElement = photo;
+                photo.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            photo.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (draggedElement && draggedElement !== photo) {
+                    photo.style.backgroundColor = 'rgba(33, 150, 243, 0.3)';
+                }
+            });
+            
+            photo.addEventListener('dragleave', () => {
+                photo.style.backgroundColor = '';
+            });
+            
+            photo.addEventListener('drop', (e) => {
+                e.preventDefault();
+                photo.style.backgroundColor = '';
+                
+                if (draggedElement && draggedElement !== photo) {
+                    const dragIndex = parseInt(draggedElement.dataset.index);
+                    const dropIndex = parseInt(photo.dataset.index);
+                    this.moverFoto(especie, dragIndex, dropIndex);
+                }
+            });
+            
+            photo.addEventListener('dragend', () => {
+                photo.style.opacity = '1';
+                draggedElement = null;
+            });
+            
+            // Eventos táctiles para móvil
             photo.addEventListener('touchstart', (e) => {
                 if (e.target.closest('.photo-actions')) return;
                 
                 startPos = {
                     x: e.touches[0].clientX,
-                    y: e.touches[0].clientY
+                    y: e.touches[0].clientY,
+                    time: Date.now()
                 };
-                hasMoved = false;
-                draggedOver = null;
-                isLongPress = false;
+                isDragging = false;
                 
-                // Iniciar timer para long press
-                longPressTimer = setTimeout(() => {
-                    if (!hasMoved) {
-                        isLongPress = true;
-                        // Mostrar botones de acción
-                        const actions = photo.querySelector('.photo-actions');
-                        if (actions) {
-                            actions.style.opacity = '1';
-                            // Vibrar si está disponible
-                            if (navigator.vibrate) {
-                                navigator.vibrate(50);
-                            }
-                        }
+                // Long press para iniciar drag
+                setTimeout(() => {
+                    if (startPos && !isDragging) {
+                        isDragging = true;
+                        photo.style.opacity = '0.7';
+                        photo.style.transform = 'scale(1.05)';
+                        photo.style.zIndex = '1000';
+                        if (navigator.vibrate) navigator.vibrate(50);
                     }
-                }, 500); // 500ms para long press
+                }, 300);
             });
             
             photo.addEventListener('touchmove', (e) => {
                 if (!startPos) return;
                 
-                // Prevenir scroll durante el arrastre
-                e.preventDefault();
-                
                 const deltaX = Math.abs(e.touches[0].clientX - startPos.x);
                 const deltaY = Math.abs(e.touches[0].clientY - startPos.y);
                 
-                if (deltaX > 15 || deltaY > 15) {
-                    hasMoved = true;
-                    // Cancelar long press si hay movimiento
-                    if (longPressTimer) {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                    }
-                    
-                    // Ocultar botones si estaban visibles
-                    const actions = photo.querySelector('.photo-actions');
-                    if (actions) {
-                        actions.style.opacity = '0';
-                    }
-                    
-                    // Prevenir scroll del contenedor
-                    const tabContent = document.getElementById('galeria');
-                    if (tabContent) {
-                        tabContent.style.overflow = 'hidden';
-                    }
-                    
-                    photo.style.opacity = '0.7';
-                    photo.style.zIndex = '1000';
-                    photo.style.transform = `translate(${e.touches[0].clientX - startPos.x}px, ${e.touches[0].clientY - startPos.y}px) scale(1.05)`;
-                    
-                    // Detectar foto destino
-                    photo.style.pointerEvents = 'none';
-                    const dropTarget = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)?.closest('.photo-item');
-                    photo.style.pointerEvents = '';
-                    
-                    // Limpiar highlight anterior
-                    if (draggedOver && draggedOver !== dropTarget) {
-                        draggedOver.style.backgroundColor = '';
-                    }
-                    
-                    // Highlight nueva foto
-                    if (dropTarget && dropTarget !== photo) {
-                        dropTarget.style.backgroundColor = 'rgba(33, 150, 243, 0.3)';
-                        draggedOver = dropTarget;
-                    } else {
-                        draggedOver = null;
+                if (deltaX > 10 || deltaY > 10) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        
+                        photo.style.transform = `translate(${e.touches[0].clientX - startPos.x}px, ${e.touches[0].clientY - startPos.y}px) scale(1.05)`;
+                        
+                        // Detectar elemento destino
+                        photo.style.pointerEvents = 'none';
+                        const elementBelow = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+                        const dropTarget = elementBelow?.closest('.photo-item');
+                        photo.style.pointerEvents = '';
+                        
+                        // Limpiar highlights anteriores
+                        photos.forEach(p => p.style.backgroundColor = '');
+                        
+                        // Highlight elemento destino
+                        if (dropTarget && dropTarget !== photo) {
+                            dropTarget.style.backgroundColor = 'rgba(33, 150, 243, 0.3)';
+                        }
                     }
                 }
             });
             
             photo.addEventListener('touchend', (e) => {
-                // Limpiar timer
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
                 if (!startPos) return;
                 
-                // Limpiar highlight
-                if (draggedOver) {
-                    draggedOver.style.backgroundColor = '';
-                }
+                const touchDuration = Date.now() - startPos.time;
                 
-                if (hasMoved && draggedOver) {
-                    const dragIndex = parseInt(photo.dataset.index);
-                    const dropIndex = parseInt(draggedOver.dataset.index);
+                if (isDragging) {
+                    // Detectar elemento destino final
+                    photo.style.pointerEvents = 'none';
+                    const elementBelow = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                    const dropTarget = elementBelow?.closest('.photo-item');
+                    photo.style.pointerEvents = '';
                     
-                    if (dragIndex !== dropIndex && dragIndex >= 0 && dropIndex >= 0) {
-                        // Intercambiar en el array
-                        const temp = this.fotos[especie][dragIndex];
-                        this.fotos[especie][dragIndex] = this.fotos[especie][dropIndex];
-                        this.fotos[especie][dropIndex] = temp;
-                        
-                        localStorage.setItem('fotos', JSON.stringify(this.fotos));
-                        this.mostrarConfirmacion('🔄 Fotos intercambiadas');
-                        
-                        // Re-renderizar inmediatamente
-                        setTimeout(() => this.renderFotos(), 50);
-                        return;
+                    if (dropTarget && dropTarget !== photo) {
+                        const dragIndex = parseInt(photo.dataset.index);
+                        const dropIndex = parseInt(dropTarget.dataset.index);
+                        this.moverFoto(especie, dragIndex, dropIndex);
                     }
-                } else if (!hasMoved && !isLongPress) {
-                    // Solo clic corto, abrir foto
+                    
+                    // Limpiar highlights
+                    photos.forEach(p => p.style.backgroundColor = '');
+                } else if (touchDuration < 300) {
+                    // Toque rápido - abrir foto
                     const fotoData = this.fotos[especie][parseInt(photo.dataset.index)];
                     if (fotoData) {
                         this.mostrarFoto(fotoData.src, fotoData.fecha, fotoData.nota || '');
@@ -886,30 +936,25 @@ class CoralTrack {
                 photo.style.opacity = '1';
                 photo.style.transform = 'scale(1)';
                 photo.style.zIndex = '';
-                photo.style.pointerEvents = '';
-                
-                // Restaurar scroll
-                const tabContent = document.getElementById('galeria');
-                if (tabContent) {
-                    tabContent.style.overflow = '';
-                }
                 
                 startPos = null;
-                hasMoved = false;
-                draggedOver = null;
-                isLongPress = false;
-            });
-            
-            // Ocultar botones al tocar fuera
-            document.addEventListener('touchstart', (e) => {
-                if (!photo.contains(e.target)) {
-                    const actions = photo.querySelector('.photo-actions');
-                    if (actions) {
-                        actions.style.opacity = '0';
-                    }
-                }
+                isDragging = false;
             });
         });
+    }
+    
+    moverFoto(especie, indiceOrigen, indiceDestino) {
+        if (indiceOrigen === indiceDestino) return;
+        if (indiceDestino < 0 || indiceDestino >= this.fotos[especie].length) return;
+        
+        // Mover elemento en el array
+        const elemento = this.fotos[especie].splice(indiceOrigen, 1)[0];
+        this.fotos[especie].splice(indiceDestino, 0, elemento);
+        
+        // Guardar y actualizar
+        localStorage.setItem('fotos', JSON.stringify(this.fotos));
+        this.renderFotos();
+        this.mostrarConfirmacion('🔄 Foto reordenada');
     }
     
 

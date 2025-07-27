@@ -976,6 +976,25 @@ header h1 {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
+    position: fixed;
+    top: 120px; /* Posición debajo del header principal */
+    left: 0;
+    right: 0;
+    z-index: 90; /* Z-index menor que el header principal */
+    background: #f5f5f5;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Espacio para compensar las pestañas fijas */
+.coral-content {
+    margin-top: 140px;
+    padding-bottom: 100px;
+    height: calc(100vh - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .coral-tab {
@@ -1068,6 +1087,9 @@ header h1 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1rem;
+    padding-bottom: 100px;
+    min-height: 100vh;
+    overflow-y: auto;
 }
 
 .photo-item {
@@ -1076,13 +1098,31 @@ header h1 {
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    user-select: none;
+    -webkit-user-drag: element;
+}
+
+.photo-item:active {
+    cursor: grabbing;
 }
 
 .photo-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.photo-item.dragging {
+    opacity: 0.7;
+    transform: scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.photo-item.drag-over {
+    background-color: rgba(33, 150, 243, 0.3);
+    transform: scale(1.02);
 }
 
 .photo-item img {
