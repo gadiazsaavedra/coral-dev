@@ -853,6 +853,8 @@ class CoralTrack {
             });
             
             // Eventos táctiles para móvil
+            let longPressTimer = null;
+            
             photo.addEventListener('touchstart', (e) => {
                 if (e.target.closest('.photo-actions')) return;
                 
@@ -863,7 +865,19 @@ class CoralTrack {
                 };
                 isDragging = false;
                 
-                // Long press para iniciar drag
+                // Long press para mostrar botones de acción
+                longPressTimer = setTimeout(() => {
+                    if (startPos && !isDragging) {
+                        // Mostrar botones de acción
+                        const actions = photo.querySelector('.photo-actions');
+                        if (actions) {
+                            actions.style.opacity = '1';
+                            if (navigator.vibrate) navigator.vibrate(50);
+                        }
+                    }
+                }, 500);
+                
+                // Timer para drag después de 800ms
                 setTimeout(() => {
                     if (startPos && !isDragging) {
                         isDragging = true;
@@ -872,7 +886,7 @@ class CoralTrack {
                         photo.style.zIndex = '1000';
                         if (navigator.vibrate) navigator.vibrate(50);
                     }
-                }, 300);
+                }, 800);
             });
             
             photo.addEventListener('touchmove', (e) => {
@@ -882,6 +896,12 @@ class CoralTrack {
                 const deltaY = Math.abs(e.touches[0].clientY - startPos.y);
                 
                 if (deltaX > 10 || deltaY > 10) {
+                    // Cancelar long press si hay movimiento
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                    
                     if (isDragging) {
                         e.preventDefault();
                         
@@ -905,6 +925,11 @@ class CoralTrack {
             });
             
             photo.addEventListener('touchend', (e) => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                
                 if (!startPos) return;
                 
                 const touchDuration = Date.now() - startPos.time;
@@ -939,6 +964,14 @@ class CoralTrack {
                 
                 startPos = null;
                 isDragging = false;
+            });
+            
+            // Ocultar botones al tocar fuera
+            document.addEventListener('touchstart', (e) => {
+                if (!photo.contains(e.target)) {
+                    const actions = photo.querySelector('.photo-actions');
+                    if (actions) actions.style.opacity = '0';
+                }
             });
         });
     }
